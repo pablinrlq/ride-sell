@@ -1,0 +1,154 @@
+import { useParams, Link } from 'react-router-dom';
+import Header from '@/components/Header';
+import Footer from '@/components/Footer';
+import { getProductById, products } from '@/data/products';
+import { Button } from '@/components/ui/button';
+import { useCart } from '@/contexts/CartContext';
+import { ShoppingCart, ArrowLeft, Truck, Shield, RotateCcw } from 'lucide-react';
+import { toast } from 'sonner';
+import ProductCard from '@/components/ProductCard';
+
+const ProductDetailPage = () => {
+  const { id } = useParams();
+  const product = getProductById(id || '');
+  const { addToCart } = useCart();
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold mb-4">Produto não encontrado</h1>
+            <Link to="/produtos">
+              <Button>Voltar para produtos</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  const handleAddToCart = () => {
+    addToCart(product);
+    toast.success(`${product.name} adicionado ao carrinho!`);
+  };
+
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(price);
+  };
+
+  const relatedProducts = products
+    .filter(p => p.category === product.category && p.id !== product.id)
+    .slice(0, 3);
+
+  const discount = product.originalPrice 
+    ? Math.round((1 - product.price / product.originalPrice) * 100) 
+    : 0;
+
+  return (
+    <div className="min-h-screen flex flex-col">
+      <Header />
+      <main className="flex-1 py-8">
+        <div className="container mx-auto px-4">
+          <Link to="/produtos" className="inline-flex items-center gap-2 text-muted-foreground hover:text-primary mb-8">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para produtos
+          </Link>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+            {/* Image */}
+            <div className="relative aspect-square bg-card border border-border overflow-hidden">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+              {discount > 0 && (
+                <span className="absolute top-4 left-4 bg-destructive text-destructive-foreground text-sm font-bold px-3 py-1">
+                  -{discount}%
+                </span>
+              )}
+            </div>
+
+            {/* Details */}
+            <div>
+              <span className="text-sm text-muted-foreground uppercase tracking-wider">
+                {product.category === 'bicicletas' ? 'Bicicleta' : product.category === 'pecas' ? 'Peça' : 'Acessório'}
+              </span>
+              <h1 className="text-3xl md:text-4xl font-bold mt-2">{product.name}</h1>
+              
+              <div className="mt-6 flex items-baseline gap-3">
+                <span className="text-3xl font-bold text-primary">{formatPrice(product.price)}</span>
+                {product.originalPrice && (
+                  <span className="text-lg text-muted-foreground line-through">
+                    {formatPrice(product.originalPrice)}
+                  </span>
+                )}
+              </div>
+
+              <p className="text-muted-foreground mt-6 leading-relaxed">{product.description}</p>
+
+              <div className="mt-6">
+                <span className={`text-sm ${product.stock > 5 ? 'text-green-600' : product.stock > 0 ? 'text-yellow-600' : 'text-destructive'}`}>
+                  {product.stock > 5 
+                    ? `${product.stock} em estoque` 
+                    : product.stock > 0 
+                    ? `Apenas ${product.stock} em estoque` 
+                    : 'Esgotado'}
+                </span>
+              </div>
+
+              <div className="mt-8">
+                <Button 
+                  size="lg" 
+                  onClick={handleAddToCart}
+                  disabled={product.stock === 0}
+                  className="w-full sm:w-auto gap-2"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Adicionar ao Carrinho
+                </Button>
+              </div>
+
+              {/* Features */}
+              <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-8 border-t border-border">
+                <div className="flex items-center gap-3">
+                  <Truck className="h-5 w-5 text-primary" />
+                  <span className="text-sm">Frete grátis acima de R$299</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Shield className="h-5 w-5 text-primary" />
+                  <span className="text-sm">Garantia de 12 meses</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <RotateCcw className="h-5 w-5 text-primary" />
+                  <span className="text-sm">7 dias para troca</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Related Products */}
+          {relatedProducts.length > 0 && (
+            <section className="mt-16 pt-16 border-t border-border">
+              <h2 className="text-2xl font-bold mb-8">Produtos Relacionados</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {relatedProducts.map(p => (
+                  <ProductCard key={p.id} product={p} />
+                ))}
+              </div>
+            </section>
+          )}
+        </div>
+      </main>
+      <Footer />
+    </div>
+  );
+};
+
+export default ProductDetailPage;
