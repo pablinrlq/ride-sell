@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   Sidebar,
@@ -74,6 +74,7 @@ const adminOnlyItems = [
 const AdminSidebar: React.FC = () => {
   const { signOut, isAdmin, user } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const { state, toggleSidebar, isMobile } = useSidebar();
   const isCollapsed = state === 'collapsed';
 
@@ -104,14 +105,12 @@ const AdminSidebar: React.FC = () => {
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton
-                    asChild
                     isActive={isActive(item.url)}
                     tooltip={item.title}
+                    onClick={() => navigate(item.url)}
                   >
-                    <NavLink to={item.url}>
-                      <item.icon className="h-4 w-4 flex-shrink-0" />
-                      <span>{item.title}</span>
-                    </NavLink>
+                    <item.icon className="h-4 w-4 flex-shrink-0" />
+                    <span>{item.title}</span>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
@@ -129,14 +128,12 @@ const AdminSidebar: React.FC = () => {
                 {adminOnlyItems.map((item) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton
-                      asChild
                       isActive={isActive(item.url)}
                       tooltip={item.title}
+                      onClick={() => navigate(item.url)}
                     >
-                      <NavLink to={item.url}>
-                        <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <span>{item.title}</span>
-                      </NavLink>
+                      <item.icon className="h-4 w-4 flex-shrink-0" />
+                      <span>{item.title}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 ))}
