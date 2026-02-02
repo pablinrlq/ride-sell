@@ -3,8 +3,7 @@ import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import AdminSidebar from '@/components/admin/AdminSidebar';
-import { Loader2, Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
 
 const AdminLayout: React.FC = () => {
   const { hasAdminAccess, isLoading } = useAuth();
@@ -27,12 +26,7 @@ const AdminLayout: React.FC = () => {
         <AdminSidebar />
         <SidebarInset className="flex-1">
           <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background px-4 md:hidden">
-            <SidebarTrigger asChild>
-              <Button variant="ghost" size="icon">
-                <Menu className="h-5 w-5" />
-                <span className="sr-only">Toggle menu</span>
-              </Button>
-            </SidebarTrigger>
+            <SidebarTrigger />
             <span className="font-semibold">Daniel Bike Shop - Admin</span>
           </header>
           <main className="flex-1 p-4 md:p-6">

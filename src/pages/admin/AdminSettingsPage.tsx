@@ -217,13 +217,11 @@ const AdminSettingsPage: React.FC = () => {
                   </div>
                 )}
                 <div>
-                  <Label htmlFor="logo-upload" className="cursor-pointer">
-                    <Button type="button" variant="outline" size="sm" asChild>
-                      <span>
-                        <Upload className="mr-2 h-4 w-4" />
-                        {uploading ? 'Enviando...' : 'Alterar Logo'}
-                      </span>
-                    </Button>
+                  <Label htmlFor="logo-upload" className="cursor-pointer inline-block">
+                    <div className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-3">
+                      <Upload className="h-4 w-4" />
+                      {uploading ? 'Enviando...' : 'Alterar Logo'}
+                    </div>
                   </Label>
                   <Input
                     id="logo-upload"
