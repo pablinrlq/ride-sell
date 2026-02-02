@@ -108,9 +108,9 @@ const AdminSidebar: React.FC = () => {
                     isActive={isActive(item.url)}
                     tooltip={item.title}
                   >
-                    <NavLink to={item.url} className="flex items-center gap-3">
+                    <NavLink to={item.url}>
                       <item.icon className="h-4 w-4 flex-shrink-0" />
-                      <span className={cn(isCollapsed && 'sr-only')}>{item.title}</span>
+                      <span>{item.title}</span>
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -133,9 +133,9 @@ const AdminSidebar: React.FC = () => {
                       isActive={isActive(item.url)}
                       tooltip={item.title}
                     >
-                      <NavLink to={item.url} className="flex items-center gap-3">
+                      <NavLink to={item.url}>
                         <item.icon className="h-4 w-4 flex-shrink-0" />
-                        <span className={cn(isCollapsed && 'sr-only')}>{item.title}</span>
+                        <span>{item.title}</span>
                       </NavLink>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
