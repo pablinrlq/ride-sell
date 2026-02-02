@@ -24,24 +24,22 @@ const AdminLoginPage: React.FC = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if any admin exists
+    // Check if any admin exists using a public edge function check
     const checkAdminExists = async () => {
       try {
-        const { data, error } = await supabase
-          .from('user_roles')
-          .select('id')
-          .eq('role', 'admin')
-          .limit(1);
-
+        // Use an edge function to check if admins exist (bypasses RLS)
+        const { data, error } = await supabase.functions.invoke('check-admin-exists');
+        
         if (error) {
           console.error('Error checking admin:', error);
-          // If RLS blocks the query, assume admin exists (login flow)
+          // If the check fails, assume admin exists (login flow) for security
           setShowFirstAdminForm(false);
         } else {
-          setShowFirstAdminForm(!data || data.length === 0);
+          setShowFirstAdminForm(data?.adminExists === false);
         }
       } catch (error) {
         console.error('Error:', error);
+        // On error, default to login form for security
         setShowFirstAdminForm(false);
       } finally {
         setCheckingAdmin(false);
