@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
 import NotFound from "./pages/NotFound";
 
 // Admin imports
@@ -23,6 +24,7 @@ import {
   AdminUsersPage,
   AdminSettingsPage,
 } from "./pages/admin";
+import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +42,7 @@ const App = () => (
               <Route path="/produtos" element={<ProductsPage />} />
               <Route path="/produto/:id" element={<ProductDetailPage />} />
               <Route path="/carrinho" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
               
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -48,6 +51,7 @@ const App = () => (
                 <Route path="products" element={<AdminProductsPage />} />
                 <Route path="categories" element={<AdminCategoriesPage />} />
                 <Route path="stock" element={<AdminStockPage />} />
+                <Route path="orders" element={<AdminOrdersPage />} />
                 <Route path="banners" element={<AdminBannersPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />

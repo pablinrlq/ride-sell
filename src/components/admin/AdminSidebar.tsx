@@ -26,6 +26,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  ShoppingCart,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
@@ -50,6 +51,11 @@ const menuItems = [
     title: 'Estoque',
     url: '/admin/stock',
     icon: Warehouse,
+  },
+  {
+    title: 'Pedidos',
+    url: '/admin/orders',
+    icon: ShoppingCart,
   },
   {
     title: 'Banners',
