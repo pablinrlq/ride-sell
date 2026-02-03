@@ -3,19 +3,26 @@ import { useState, useMemo } from 'react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductCard from '@/components/ProductCard';
-import { products } from '@/data/products';
+import { useProducts, useCategories } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Loader2 } from 'lucide-react';
 
 const ProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('categoria') || 'todos';
   const [sortBy, setSortBy] = useState('featured');
 
+  const { data: products, isLoading: productsLoading } = useProducts();
+  const { data: categories, isLoading: categoriesLoading } = useCategories();
+
   const filteredProducts = useMemo(() => {
+    if (!products) return [];
+    
     let filtered = categoryParam === 'todos' 
       ? products 
-      : products.filter(p => p.category === categoryParam);
+      : products.filter(p => p.categorySlug === categoryParam);
 
     switch (sortBy) {
       case 'price-asc':
@@ -27,14 +34,17 @@ const ProductsPage = () => {
       default:
         return filtered;
     }
-  }, [categoryParam, sortBy]);
+  }, [products, categoryParam, sortBy]);
 
-  const categories = [
-    { value: 'todos', label: 'Todos' },
-    { value: 'bicicletas', label: 'Bicicletas' },
-    { value: 'pecas', label: 'Peças' },
-    { value: 'acessorios', label: 'Acessórios' }
-  ];
+  const categoryOptions = useMemo(() => {
+    const options = [{ value: 'todos', label: 'Todos' }];
+    if (categories) {
+      categories.forEach(cat => {
+        options.push({ value: cat.slug, label: cat.name });
+      });
+    }
+    return options;
+  }, [categories]);
 
   const handleCategoryChange = (category: string) => {
     if (category === 'todos') {
@@ -45,6 +55,8 @@ const ProductsPage = () => {
     setSearchParams(searchParams);
   };
 
+  const isLoading = productsLoading || categoriesLoading;
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -53,23 +65,35 @@ const ProductsPage = () => {
           <div className="mb-8">
             <h1 className="text-3xl md:text-4xl font-bold">Nossos Produtos</h1>
             <p className="text-muted-foreground mt-2">
-              {filteredProducts.length} produto{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+              {isLoading ? (
+                <Skeleton className="h-5 w-40 inline-block" />
+              ) : (
+                `${filteredProducts.length} produto${filteredProducts.length !== 1 ? 's' : ''} encontrado${filteredProducts.length !== 1 ? 's' : ''}`
+              )}
             </p>
           </div>
 
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center mb-8 p-4 bg-card border border-border">
             <div className="flex flex-wrap gap-2">
-              {categories.map(cat => (
-                <Button
-                  key={cat.value}
-                  variant={categoryParam === cat.value ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleCategoryChange(cat.value)}
-                >
-                  {cat.label}
-                </Button>
-              ))}
+              {isLoading ? (
+                <>
+                  <Skeleton className="h-9 w-20" />
+                  <Skeleton className="h-9 w-24" />
+                  <Skeleton className="h-9 w-20" />
+                </>
+              ) : (
+                categoryOptions.map(cat => (
+                  <Button
+                    key={cat.value}
+                    variant={categoryParam === cat.value ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleCategoryChange(cat.value)}
+                  >
+                    {cat.label}
+                  </Button>
+                ))
+              )}
             </div>
             <Select value={sortBy} onValueChange={setSortBy}>
               <SelectTrigger className="w-48">
@@ -85,13 +109,29 @@ const ProductsPage = () => {
           </div>
 
           {/* Products Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {filteredProducts.map(product => (
-              <ProductCard key={product.id} product={product} />
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                <div key={i} className="bg-card border border-border overflow-hidden">
+                  <Skeleton className="aspect-square" />
+                  <div className="p-4 space-y-3">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-6 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredProducts.map(product => (
+                <ProductCard key={product.id} product={product} />
+              ))}
+            </div>
+          )}
 
-          {filteredProducts.length === 0 && (
+          {!isLoading && filteredProducts.length === 0 && (
             <div className="text-center py-16">
               <p className="text-muted-foreground">Nenhum produto encontrado nesta categoria.</p>
             </div>

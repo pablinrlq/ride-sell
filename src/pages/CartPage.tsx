@@ -15,6 +15,9 @@ const CartPage = () => {
     }).format(price);
   };
 
+  const shippingCost = total >= 299 ? 0 : 29.90;
+  const orderTotal = total + shippingCost;
+
   if (items.length === 0) {
     return (
       <div className="min-h-screen flex flex-col">
@@ -111,22 +114,26 @@ const CartPage = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Frete</span>
-                    <span>{total >= 299 ? 'Grátis' : formatPrice(29.90)}</span>
+                    <span className={shippingCost === 0 ? 'text-green-600' : ''}>
+                      {shippingCost === 0 ? 'Grátis' : formatPrice(shippingCost)}
+                    </span>
                   </div>
                   <div className="border-t border-border pt-3 mt-3">
                     <div className="flex justify-between text-lg font-bold">
                       <span>Total</span>
-                      <span>{formatPrice(total >= 299 ? total : total + 29.90)}</span>
+                      <span>{formatPrice(orderTotal)}</span>
                     </div>
                     {total >= 299 && (
                       <p className="text-xs text-green-600 mt-1">Você ganhou frete grátis!</p>
                     )}
                   </div>
                 </div>
-                <Button className="w-full mt-6 gap-2" size="lg">
-                  Finalizar Compra
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <Link to="/checkout">
+                  <Button className="w-full mt-6 gap-2" size="lg">
+                    Finalizar Compra
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
                 <Link to="/produtos" className="block text-center mt-4">
                   <Button variant="link" className="text-muted-foreground">
                     Continuar Comprando

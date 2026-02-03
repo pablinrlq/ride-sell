@@ -1,4 +1,4 @@
-import { Product } from '@/types/product';
+import { Product } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingCart, Eye } from 'lucide-react';
@@ -13,7 +13,17 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
-    addToCart(product);
+    addToCart({
+      id: product.id,
+      name: product.name,
+      description: product.description,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.categorySlug as 'bicicletas' | 'pecas' | 'acessorios',
+      image: product.image,
+      stock: product.stock,
+      featured: product.featured,
+    });
     toast.success(`${product.name} adicionado ao carrinho!`);
   };
 
@@ -73,7 +83,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
       </div>
       <div className="p-4">
         <span className="text-xs text-muted-foreground uppercase tracking-wider">
-          {product.category === 'bicicletas' ? 'Bicicleta' : product.category === 'pecas' ? 'Peça' : 'Acessório'}
+          {product.category}
         </span>
         <h3 className="font-semibold mt-1 line-clamp-1">{product.name}</h3>
         <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{product.description}</p>
