@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, X, User } from 'lucide-react';
+import { ShoppingCart, Menu, X, User, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
+import SearchBar from '@/components/SearchBar';
 
 const Header = () => {
   const { itemCount } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
 
   const navLinks = [
@@ -47,6 +49,21 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-2">
+            {/* Desktop Search */}
+            <div className="hidden lg:block w-64">
+              <SearchBar />
+            </div>
+            
+            {/* Mobile Search Toggle */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="lg:hidden"
+              onClick={() => setSearchOpen(!searchOpen)}
+            >
+              <Search className="h-5 w-5" />
+            </Button>
+            
             <Link to="/admin">
               <Button variant="ghost" size="icon" className="hidden md:flex">
                 <User className="h-5 w-5" />
@@ -72,6 +89,13 @@ const Header = () => {
             </Button>
           </div>
         </div>
+
+        {/* Mobile Search */}
+        {searchOpen && (
+          <div className="lg:hidden py-3 border-t border-border">
+            <SearchBar onClose={() => setSearchOpen(false)} />
+          </div>
+        )}
 
         {/* Mobile Navigation */}
         {mobileMenuOpen && (

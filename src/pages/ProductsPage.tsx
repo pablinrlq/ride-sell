@@ -12,6 +12,7 @@ import { Loader2 } from 'lucide-react';
 const ProductsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const categoryParam = searchParams.get('categoria') || 'todos';
+  const searchQuery = searchParams.get('busca') || '';
   const [sortBy, setSortBy] = useState('featured');
 
   const { data: products, isLoading: productsLoading } = useProducts();
@@ -24,6 +25,17 @@ const ProductsPage = () => {
       ? products 
       : products.filter(p => p.categorySlug === categoryParam);
 
+    // Apply search filter
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter(p => 
+        p.name.toLowerCase().includes(query) ||
+        p.description?.toLowerCase().includes(query) ||
+        p.brand?.toLowerCase().includes(query) ||
+        p.model?.toLowerCase().includes(query)
+      );
+    }
+
     switch (sortBy) {
       case 'price-asc':
         return [...filtered].sort((a, b) => a.price - b.price);
@@ -34,7 +46,7 @@ const ProductsPage = () => {
       default:
         return filtered;
     }
-  }, [products, categoryParam, sortBy]);
+  }, [products, categoryParam, searchQuery, sortBy]);
 
   const categoryOptions = useMemo(() => {
     const options = [{ value: 'todos', label: 'Todos' }];
