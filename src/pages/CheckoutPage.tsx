@@ -4,19 +4,21 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
 import { useCreateOrder } from '@/hooks/useOrders';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const CheckoutPage = () => {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
+  const { data: storeSettings } = useStoreSettings();
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderId, setOrderId] = useState('');
 
@@ -74,18 +76,32 @@ const CheckoutPage = () => {
     }
   };
 
+  const generateWhatsAppLink = () => {
+    if (!storeSettings?.whatsapp) return null;
+    
+    const phone = storeSettings.whatsapp.replace(/\D/g, '');
+    const orderNumber = orderId.slice(0, 8).toUpperCase();
+    const message = encodeURIComponent(
+      `Olá! Acabei de fazer o pedido #${orderNumber} na loja ${storeSettings.store_name}. Gostaria de confirmar os detalhes do pagamento.`
+    );
+    
+    return `https://wa.me/55${phone}?text=${message}`;
+  };
+
   if (items.length === 0 && !orderComplete) {
     navigate('/carrinho');
     return null;
   }
 
   if (orderComplete) {
+    const whatsappLink = generateWhatsAppLink();
+    
     return (
       <div className="min-h-screen flex flex-col">
         <Header />
         <main className="flex-1 flex items-center justify-center py-16">
           <div className="text-center max-w-md px-4">
-            <CheckCircle className="h-20 w-20 mx-auto text-green-500 mb-6" />
+            <CheckCircle className="h-20 w-20 mx-auto text-primary mb-6" />
             <h1 className="text-3xl font-bold mb-4">Pedido Confirmado!</h1>
             <p className="text-muted-foreground mb-2">
               Seu pedido foi realizado com sucesso.
@@ -96,9 +112,20 @@ const CheckoutPage = () => {
             <p className="text-muted-foreground mb-8">
               Você receberá um e-mail com os detalhes do pedido e instruções para pagamento.
             </p>
-            <Link to="/produtos">
-              <Button size="lg">Continuar Comprando</Button>
-            </Link>
+            
+            <div className="flex flex-col gap-3">
+              {whatsappLink && (
+                <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
+                  <Button size="lg" className="w-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-primary-foreground">
+                    <MessageCircle className="mr-2 h-5 w-5" />
+                    Falar via WhatsApp
+                  </Button>
+                </a>
+              )}
+              <Link to="/produtos">
+                <Button size="lg" variant="outline" className="w-full">Continuar Comprando</Button>
+              </Link>
+            </div>
           </div>
         </main>
         <Footer />

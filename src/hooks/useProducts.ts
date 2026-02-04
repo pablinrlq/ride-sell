@@ -9,13 +9,16 @@ export type DbProduct = Tables<'products'> & {
 
 export interface Product {
   id: string;
+  slug: string;
   name: string;
   description: string;
   price: number;
   originalPrice?: number;
+  promotionalPrice?: number;
   category: string;
   categorySlug: string;
   image: string;
+  primaryImage: string;
   images: string[];
   stock: number;
   featured: boolean;
@@ -34,13 +37,16 @@ const transformProduct = (dbProduct: DbProduct): Product => {
   
   return {
     id: dbProduct.id,
+    slug: dbProduct.slug,
     name: dbProduct.name,
     description: dbProduct.description || '',
     price: dbProduct.promotional_price || dbProduct.price,
     originalPrice: dbProduct.promotional_price ? dbProduct.price : undefined,
+    promotionalPrice: dbProduct.promotional_price || undefined,
     category: dbProduct.category?.name || 'Sem categoria',
     categorySlug: dbProduct.category?.slug || 'outros',
     image: mainImage,
+    primaryImage: mainImage,
     images: dbProduct.images?.sort((a, b) => a.display_order - b.display_order).map(img => img.image_url) || [mainImage],
     stock: dbProduct.stock_quantity,
     featured: dbProduct.is_featured,
