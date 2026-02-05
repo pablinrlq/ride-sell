@@ -1,4 +1,5 @@
 import { Product } from '@/hooks/useProducts';
+import { Product as CartProduct } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { ShoppingCart, Eye } from 'lucide-react';
@@ -13,7 +14,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
 
   const handleAddToCart = () => {
-    addToCart({
+    const cartProduct: CartProduct = {
       id: product.id,
       name: product.name,
       description: product.description,
@@ -23,7 +24,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
       image: product.image,
       stock: product.stock,
       featured: product.featured,
-    });
+      slug: product.slug,
+    };
+    addToCart(cartProduct);
     toast.success(`${product.name} adicionado ao carrinho!`);
   };
 
@@ -63,7 +66,7 @@ const ProductCard = ({ product }: ProductCardProps) => {
         )}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
           <div className="flex gap-2">
-            <Link to={`/produto/${product.id}`} className="flex-1">
+            <Link to={`/produto/${product.slug || product.id}`} className="flex-1">
               <Button variant="secondary" size="sm" className="w-full gap-1">
                 <Eye className="h-4 w-4" />
                 Ver
