@@ -63,6 +63,7 @@ const AdminStockPage: React.FC = () => {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
+  const [showLowStockOnly, setShowLowStockOnly] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
@@ -213,34 +214,26 @@ const AdminStockPage: React.FC = () => {
   };
 
   const lowStockProducts = products?.filter(p => p.stock_quantity <= p.low_stock_threshold) || [];
+  const displayedProducts = showLowStockOnly ? lowStockProducts : products;
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold">Estoque</h1>
-        <p className="text-muted-foreground">Gerencie o estoque dos produtos</p>
+      <div className="flex flex-col sm:flex-row justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold">Estoque</h1>
+          <p className="text-muted-foreground">Gerencie o estoque dos produtos</p>
+        </div>
+        {lowStockProducts.length > 0 && (
+          <Button
+            variant={showLowStockOnly ? "destructive" : "outline"}
+            onClick={() => setShowLowStockOnly(!showLowStockOnly)}
+            className="gap-2"
+          >
+            <AlertTriangle className="h-4 w-4" />
+            {showLowStockOnly ? 'Ver todos' : `Ver estoque baixo (${lowStockProducts.length})`}
+          </Button>
+        )}
       </div>
-
-      {/* Low Stock Alert */}
-      {lowStockProducts.length > 0 && (
-        <Card className="border-destructive">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2 text-destructive">
-              <AlertTriangle className="h-5 w-5" />
-              Produtos com Estoque Baixo ({lowStockProducts.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {lowStockProducts.map(p => (
-                <Badge key={p.id} variant="destructive" className="cursor-pointer" onClick={() => handleOpenMovement(p)}>
-                  {p.name} ({p.stock_quantity})
-                </Badge>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Products Stock */}
@@ -267,7 +260,7 @@ const AdminStockPage: React.FC = () => {
                   <Skeleton key={i} className="h-10 w-full" />
                 ))}
               </div>
-            ) : products && products.length > 0 ? (
+            ) : displayedProducts && displayedProducts.length > 0 ? (
               <div className="max-h-[400px] overflow-y-auto">
                 <Table>
                   <TableHeader>
@@ -278,7 +271,7 @@ const AdminStockPage: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {products.map((product) => (
+                    {displayedProducts.map((product) => (
                       <TableRow key={product.id}>
                         <TableCell>
                           <div className="font-medium">{product.name}</div>
@@ -311,7 +304,7 @@ const AdminStockPage: React.FC = () => {
             ) : (
               <div className="p-12 text-center text-muted-foreground">
                 <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Nenhum produto encontrado</p>
+                <p>{showLowStockOnly ? 'Nenhum produto com estoque baixo' : 'Nenhum produto encontrado'}</p>
               </div>
             )}
           </CardContent>
