@@ -240,6 +240,7 @@ export type Database = {
           name: string
           price: number
           promotional_price: number | null
+          sku: string | null
           slug: string
           stock_quantity: number
           suspensao: string | null
@@ -262,6 +263,7 @@ export type Database = {
           name: string
           price?: number
           promotional_price?: number | null
+          sku?: string | null
           slug: string
           stock_quantity?: number
           suspensao?: string | null
@@ -284,6 +286,7 @@ export type Database = {
           name?: string
           price?: number
           promotional_price?: number | null
+          sku?: string | null
           slug?: string
           stock_quantity?: number
           suspensao?: string | null
