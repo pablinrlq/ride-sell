@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
+import CheckoutPage from "./pages/CheckoutPage";
 import NotFound from "./pages/NotFound";
 
 // Admin imports
@@ -41,6 +42,7 @@ const App = () => (
               <Route path="/produtos" element={<ProductsPage />} />
               <Route path="/produto/:id" element={<ProductDetailPage />} />
               <Route path="/carrinho" element={<CartPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
               
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />

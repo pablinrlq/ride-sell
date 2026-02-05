@@ -4,23 +4,31 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
 import { useCreateOrder } from '@/hooks/useOrders';
-import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle, Loader2, MessageCircle } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Loader2, MessageCircle, FileText } from 'lucide-react';
 import { Link } from 'react-router-dom';
+
+const WHATSAPP_NUMBER = '5531995326386';
+
+interface OrderResult {
+  id: string;
+  blingOrderId?: string;
+  blingOrderNumber?: string;
+  nfeIssued?: boolean;
+  nfeNumber?: string;
+}
 
 const CheckoutPage = () => {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
-  const { data: storeSettings } = useStoreSettings();
   const [orderComplete, setOrderComplete] = useState(false);
-  const [orderId, setOrderId] = useState('');
+  const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -48,6 +56,49 @@ const CheckoutPage = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const generateWhatsAppMessage = (result: OrderResult) => {
+    const orderNumber = result.blingOrderNumber || result.id.slice(0, 8).toUpperCase();
+    
+    let message = `🚲 *PEDIDO CONFIRMADO - DANIEL BIKE SHOP*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+    message += `📋 *Pedido:* #${orderNumber}\n`;
+    message += `👤 *Cliente:* ${formData.customer_name}\n`;
+    message += `📧 *E-mail:* ${formData.customer_email}\n`;
+    message += `📱 *Telefone:* ${formData.customer_phone}\n\n`;
+    
+    message += `📍 *Endereço de Entrega:*\n`;
+    message += `${formData.customer_address}\n`;
+    message += `${formData.customer_city} - ${formData.customer_state}\n`;
+    message += `CEP: ${formData.customer_zip}\n\n`;
+    
+    message += `📦 *PRODUTOS:*\n`;
+    message += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+    
+    items.forEach((item, index) => {
+      message += `${index + 1}. *${item.product.name}*\n`;
+      message += `   ${item.quantity}x ${formatPrice(item.product.price)} = ${formatPrice(item.product.price * item.quantity)}\n`;
+    });
+    
+    message += `\n━━━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `💰 *RESUMO:*\n`;
+    message += `   Subtotal: ${formatPrice(total)}\n`;
+    message += `   Frete: ${shippingCost === 0 ? 'GRÁTIS 🎉' : formatPrice(shippingCost)}\n`;
+    message += `   *TOTAL: ${formatPrice(orderTotal)}*\n\n`;
+    
+    if (result.nfeIssued && result.nfeNumber) {
+      message += `✅ *NF-e emitida:* ${result.nfeNumber}\n\n`;
+    }
+    
+    if (formData.notes) {
+      message += `📝 *Observações:* ${formData.notes}\n\n`;
+    }
+    
+    message += `━━━━━━━━━━━━━━━━━━━━━━\n`;
+    message += `_Aguardando confirmação de pagamento_`;
+    
+    return encodeURIComponent(message);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -68,7 +119,7 @@ const CheckoutPage = () => {
         items: orderItems,
       });
 
-      setOrderId(order.id);
+      setOrderResult(order as OrderResult);
       setOrderComplete(true);
       clearCart();
     } catch (error) {
@@ -76,16 +127,10 @@ const CheckoutPage = () => {
     }
   };
 
-  const generateWhatsAppLink = () => {
-    if (!storeSettings?.whatsapp) return null;
-    
-    const phone = storeSettings.whatsapp.replace(/\D/g, '');
-    const orderNumber = orderId.slice(0, 8).toUpperCase();
-    const message = encodeURIComponent(
-      `Olá! Acabei de fazer o pedido #${orderNumber} na loja ${storeSettings.store_name}. Gostaria de confirmar os detalhes do pagamento.`
-    );
-    
-    return `https://wa.me/55${phone}?text=${message}`;
+  const getWhatsAppLink = () => {
+    if (!orderResult) return null;
+    const message = generateWhatsAppMessage(orderResult);
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${message}`;
   };
 
   if (items.length === 0 && !orderComplete) {
@@ -93,8 +138,9 @@ const CheckoutPage = () => {
     return null;
   }
 
-  if (orderComplete) {
-    const whatsappLink = generateWhatsAppLink();
+  if (orderComplete && orderResult) {
+    const whatsappLink = getWhatsAppLink();
+    const orderNumber = orderResult.blingOrderNumber || orderResult.id.slice(0, 8).toUpperCase();
     
     return (
       <div className="min-h-screen flex flex-col">
@@ -106,11 +152,19 @@ const CheckoutPage = () => {
             <p className="text-muted-foreground mb-2">
               Seu pedido foi realizado com sucesso.
             </p>
-            <p className="text-sm text-muted-foreground mb-6">
-              Número do pedido: <span className="font-mono font-bold">{orderId.slice(0, 8).toUpperCase()}</span>
+            <p className="text-sm text-muted-foreground mb-2">
+              Número do pedido: <span className="font-mono font-bold">{orderNumber}</span>
             </p>
+            
+            {orderResult.nfeIssued && orderResult.nfeNumber && (
+              <div className="flex items-center justify-center gap-2 text-sm text-green-600 mb-4">
+                <FileText className="h-4 w-4" />
+                <span>NF-e emitida: {orderResult.nfeNumber}</span>
+              </div>
+            )}
+            
             <p className="text-muted-foreground mb-8">
-              Você receberá um e-mail com os detalhes do pedido e instruções para pagamento.
+              Clique no botão abaixo para enviar os detalhes do pedido via WhatsApp e combinar o pagamento.
             </p>
             
             <div className="flex flex-col gap-3">
@@ -118,7 +172,7 @@ const CheckoutPage = () => {
                 <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
                   <Button size="lg" className="w-full bg-[hsl(142,70%,45%)] hover:bg-[hsl(142,70%,40%)] text-primary-foreground">
                     <MessageCircle className="mr-2 h-5 w-5" />
-                    Falar via WhatsApp
+                    Enviar Pedido via WhatsApp
                   </Button>
                 </a>
               )}
@@ -322,7 +376,7 @@ const CheckoutPage = () => {
                     </Button>
 
                     <p className="text-xs text-muted-foreground text-center">
-                      Após confirmar, você receberá instruções de pagamento por e-mail.
+                      Após confirmar, você será direcionado para o WhatsApp para combinar o pagamento.
                     </p>
                   </CardContent>
                 </Card>
