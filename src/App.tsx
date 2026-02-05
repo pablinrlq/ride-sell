@@ -10,7 +10,9 @@ import ProductsPage from "./pages/ProductsPage";
 import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
 import CheckoutPage from "./pages/CheckoutPage";
+import AboutPage from "./pages/AboutPage";
 import NotFound from "./pages/NotFound";
+import WhatsAppButton from "@/components/WhatsAppButton";
 
 // Admin imports
 import AdminLayout from "@/components/admin/AdminLayout";
@@ -44,6 +46,7 @@ const App = () => (
               <Route path="/produto/:id" element={<ProductDetailPage />} />
               <Route path="/carrinho" element={<CartPage />} />
               <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/sobre" element={<AboutPage />} />
               
               {/* Admin routes */}
               <Route path="/admin/login" element={<AdminLoginPage />} />
@@ -62,6 +65,7 @@ const App = () => (
               {/* Catch-all */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            <WhatsAppButton />
           </BrowserRouter>
         </CartProvider>
       </AuthProvider>

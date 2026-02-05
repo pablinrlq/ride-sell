@@ -2,8 +2,9 @@ import { useFeaturedProducts } from '@/hooks/useProducts';
 import ProductCard from '@/components/ProductCard';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
 
 const FeaturedProducts = () => {
   const { data: featuredProducts, isLoading } = useFeaturedProducts();
@@ -49,15 +50,21 @@ const FeaturedProducts = () => {
             <h2 className="text-3xl md:text-4xl font-bold mt-2">Produtos em Destaque</h2>
           </div>
           <Link to="/produtos">
-            <Button variant="ghost" className="gap-2">
+            <Button variant="ghost" className="gap-2 group">
               Ver todos
-              <ArrowRight className="h-4 w-4" />
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
             </Button>
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {featuredProducts.map(product => (
-            <ProductCard key={product.id} product={product} />
+          {featuredProducts.map((product, index) => (
+            <div 
+              key={product.id}
+              className={cn("animate-fade-in")}
+              style={{ animationDelay: `${index * 100}ms` }}
+            >
+              <ProductCard product={product} />
+            </div>
           ))}
         </div>
       </div>

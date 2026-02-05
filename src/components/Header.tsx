@@ -17,6 +17,7 @@ const Header = () => {
     { name: 'Bicicletas', path: '/produtos?categoria=bicicletas' },
     { name: 'Peças', path: '/produtos?categoria=pecas' },
     { name: 'Acessórios', path: '/produtos?categoria=acessorios' },
+    { name: 'Sobre', path: '/sobre' },
   ];
 
   const isActive = (path: string) => {
