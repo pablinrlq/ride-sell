@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,80 +7,6 @@ const corsHeaders = {
 };
 
 const BLING_API_BASE = 'https://www.bling.com.br/Api/v3';
-
-async function getBlingAccessToken(supabase: any): Promise<string> {
-  const BLING_CLIENT_ID = Deno.env.get('BLING_CLIENT_ID')!;
-  const BLING_CLIENT_SECRET = Deno.env.get('BLING_CLIENT_SECRET')!;
-
-  const { data: tokenData, error } = await supabase
-    .from('bling_oauth_tokens')
-    .select('*')
-    .order('created_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error || !tokenData) {
-    throw new Error('Bling not connected. Please authorize first.');
-  }
-
-  const expiresAt = new Date(tokenData.expires_at);
-  const now = new Date();
-  const bufferMs = 5 * 60 * 1000;
-
-  if (expiresAt.getTime() - now.getTime() < bufferMs) {
-    console.log('Token expired, refreshing...');
-    
-    const credentials = btoa(`${BLING_CLIENT_ID}:${BLING_CLIENT_SECRET}`);
-    const refreshResponse = await fetch(`${BLING_API_BASE}/oauth/token`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Authorization': `Basic ${credentials}`,
-      },
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        refresh_token: tokenData.refresh_token,
-      }),
-    });
-
-    if (!refreshResponse.ok) {
-      throw new Error('Failed to refresh Bling token');
-    }
-
-    const newTokenData = await refreshResponse.json();
-    const newExpiresAt = new Date(Date.now() + (newTokenData.expires_in * 1000));
-
-    await supabase.from('bling_oauth_tokens').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-    await supabase.from('bling_oauth_tokens').insert({
-      access_token: newTokenData.access_token,
-      refresh_token: newTokenData.refresh_token,
-      expires_at: newExpiresAt.toISOString(),
-    });
-
-    return newTokenData.access_token;
-  }
-
-  return tokenData.access_token;
-}
-
-async function blingRequest(accessToken: string, endpoint: string, options: RequestInit = {}): Promise<any> {
-  const response = await fetch(`${BLING_API_BASE}${endpoint}`, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Content-Type': 'application/json',
-      'Accept': 'application/json',
-      ...options.headers,
-    },
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Bling API error: ${response.status} - ${errorText}`);
-  }
-
-  return response.json();
-}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -90,30 +16,84 @@ serve(async (req) => {
   try {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const BLING_CLIENT_ID = Deno.env.get('BLING_CLIENT_ID')!;
+    const BLING_CLIENT_SECRET = Deno.env.get('BLING_CLIENT_SECRET')!;
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
     console.log('Starting Bling product sync...');
 
-    const accessToken = await getBlingAccessToken(supabase);
-    
+    // Get access token
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('bling_oauth_tokens')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (tokenError || !tokenData) {
+      throw new Error('Bling not connected. Please authorize first.');
+    }
+
+    let accessToken = tokenData.access_token;
+    const expiresAt = new Date(tokenData.expires_at);
+    const now = new Date();
+
+    // Refresh token if expired
+    if (expiresAt.getTime() - now.getTime() < 300000) {
+      console.log('Token expired, refreshing...');
+      const credentials = btoa(`${BLING_CLIENT_ID}:${BLING_CLIENT_SECRET}`);
+      const refreshResponse = await fetch(`${BLING_API_BASE}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${credentials}`,
+        },
+        body: new URLSearchParams({
+          grant_type: 'refresh_token',
+          refresh_token: tokenData.refresh_token,
+        }),
+      });
+
+      if (!refreshResponse.ok) throw new Error('Failed to refresh token');
+
+      const newTokenData = await refreshResponse.json();
+      const newExpiresAt = new Date(Date.now() + (newTokenData.expires_in * 1000));
+
+      await supabase.from('bling_oauth_tokens').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await supabase.from('bling_oauth_tokens').insert({
+        access_token: newTokenData.access_token,
+        refresh_token: newTokenData.refresh_token,
+        expires_at: newExpiresAt.toISOString(),
+      });
+
+      accessToken = newTokenData.access_token;
+    }
+
+    // Fetch products from Bling
     const allProducts: any[] = [];
     let page = 1;
     let hasMore = true;
 
     while (hasMore && page <= 10) {
-      try {
-        const result = await blingRequest(accessToken, `/produtos?pagina=${page}&limite=100`);
-        
-        if (result.data && result.data.length > 0) {
-          allProducts.push(...result.data);
-          page++;
-          hasMore = result.data.length === 100;
-        } else {
-          hasMore = false;
-        }
-      } catch (error) {
-        console.error('Error fetching products page', page, error);
+      const response = await fetch(`${BLING_API_BASE}/produtos?pagina=${page}&limite=100`, {
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Accept': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Bling API error: ${response.status} - ${errorText}`);
+      }
+
+      const result = await response.json();
+      if (result.data && result.data.length > 0) {
+        allProducts.push(...result.data);
+        page++;
+        hasMore = result.data.length === 100;
+      } else {
         hasMore = false;
       }
     }
@@ -127,6 +107,7 @@ serve(async (req) => {
       try {
         const productId = product.id.toString();
         
+        // Cache product data
         await supabase
           .from('bling_products_cache')
           .upsert({
@@ -135,6 +116,7 @@ serve(async (req) => {
             synced_at: new Date().toISOString(),
           }, { onConflict: 'bling_product_id' });
 
+        // Create slug
         const slug = product.nome
           .toLowerCase()
           .normalize('NFD')
@@ -154,6 +136,7 @@ serve(async (req) => {
           brand: product.marca || null,
         };
 
+        // Check if product exists
         const { data: existingProduct } = await supabase
           .from('products')
           .select('id')
