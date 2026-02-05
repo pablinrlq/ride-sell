@@ -72,6 +72,7 @@ export const useProducts = () => {
           images:product_images(*)
         `)
         .eq('is_active', true)
+        .gt('stock_quantity', 0)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -93,6 +94,7 @@ export const useFeaturedProducts = () => {
         `)
         .eq('is_active', true)
         .eq('is_featured', true)
+        .gt('stock_quantity', 0)
         .order('created_at', { ascending: false })
         .limit(6);
 
@@ -113,7 +115,8 @@ export const useProductsByCategory = (categorySlug: string) => {
           category:categories(*),
           images:product_images(*)
         `)
-        .eq('is_active', true);
+        .eq('is_active', true)
+        .gt('stock_quantity', 0);
 
       if (categorySlug && categorySlug !== 'todos') {
         const { data: category } = await supabase
