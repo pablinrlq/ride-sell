@@ -53,6 +53,98 @@ export type Database = {
         }
         Relationships: []
       }
+      bling_oauth_tokens: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string
+          id: string
+          refresh_token: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at: string
+          id?: string
+          refresh_token: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          refresh_token?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      bling_orders: {
+        Row: {
+          bling_contact_id: string | null
+          bling_nfe_id: string | null
+          bling_nfe_number: string | null
+          bling_order_id: string
+          created_at: string
+          id: string
+          order_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          bling_contact_id?: string | null
+          bling_nfe_id?: string | null
+          bling_nfe_number?: string | null
+          bling_order_id: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          bling_contact_id?: string | null
+          bling_nfe_id?: string | null
+          bling_nfe_number?: string | null
+          bling_order_id?: string
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bling_orders_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bling_products_cache: {
+        Row: {
+          bling_product_id: string
+          data: Json
+          id: string
+          synced_at: string
+        }
+        Insert: {
+          bling_product_id: string
+          data: Json
+          id?: string
+          synced_at?: string
+        }
+        Update: {
+          bling_product_id?: string
+          data?: Json
+          id?: string
+          synced_at?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string

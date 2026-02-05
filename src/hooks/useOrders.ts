@@ -32,7 +32,7 @@ export const useCreateOrder = () => {
     mutationFn: async (orderData: CreateOrderData) => {
       const { items, ...orderInfo } = orderData;
 
-      // Create order
+      // Create order in database
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert(orderInfo)
@@ -52,6 +52,30 @@ export const useCreateOrder = () => {
         .insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Process order with Bling (create order + NF-e)
+      try {
+        const { data: blingResult, error: blingError } = await supabase.functions.invoke('bling-create-order', {
+          body: { orderId: order.id },
+        });
+
+        if (blingError) {
+          console.error('Bling processing error:', blingError);
+          // Order is created, but Bling sync failed - don't fail the order
+        } else {
+          console.log('Bling processing result:', blingResult);
+          // Attach Bling data to the order for WhatsApp message
+          return {
+            ...order,
+            blingOrderId: blingResult?.blingOrderId,
+            blingOrderNumber: blingResult?.orderNumber,
+            nfeIssued: blingResult?.nfeIssued,
+            nfeNumber: blingResult?.nfeNumber,
+          };
+        }
+      } catch (e) {
+        console.error('Failed to process with Bling:', e);
+      }
 
       return order;
     },
@@ -105,6 +129,40 @@ export const useUpdateOrderStatus = () => {
     },
     onError: () => {
       toast.error('Erro ao atualizar status do pedido.');
+    },
+  });
+};
+
+// Hook to check Bling connection status
+export const useBlingConnection = () => {
+  return useQuery({
+    queryKey: ['bling-connection'],
+    queryFn: async () => {
+      const { data, error } = await supabase.functions.invoke('bling-check-connection');
+      if (error) throw error;
+      return data as { connected: boolean; authUrl: string; expiresAt: string | null };
+    },
+    staleTime: 60000, // 1 minute
+  });
+};
+
+// Hook to sync products from Bling
+export const useSyncBlingProducts = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data, error } = await supabase.functions.invoke('bling-sync-products');
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+      toast.success(`Sincronização concluída! ${data.synced} produtos atualizados.`);
+    },
+    onError: (error) => {
+      console.error('Sync error:', error);
+      toast.error('Erro ao sincronizar produtos com Bling.');
     },
   });
 };
