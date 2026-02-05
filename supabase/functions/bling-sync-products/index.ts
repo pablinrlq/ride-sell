@@ -1,11 +1,86 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { fetchBlingProducts } from "../_shared/bling-client.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const BLING_API_BASE = 'https://www.bling.com.br/Api/v3';
+
+async function getBlingAccessToken(supabase: any): Promise<string> {
+  const BLING_CLIENT_ID = Deno.env.get('BLING_CLIENT_ID')!;
+  const BLING_CLIENT_SECRET = Deno.env.get('BLING_CLIENT_SECRET')!;
+
+  const { data: tokenData, error } = await supabase
+    .from('bling_oauth_tokens')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error || !tokenData) {
+    throw new Error('Bling not connected. Please authorize first.');
+  }
+
+  const expiresAt = new Date(tokenData.expires_at);
+  const now = new Date();
+  const bufferMs = 5 * 60 * 1000;
+
+  if (expiresAt.getTime() - now.getTime() < bufferMs) {
+    console.log('Token expired, refreshing...');
+    
+    const credentials = btoa(`${BLING_CLIENT_ID}:${BLING_CLIENT_SECRET}`);
+    const refreshResponse = await fetch(`${BLING_API_BASE}/oauth/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'Authorization': `Basic ${credentials}`,
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        refresh_token: tokenData.refresh_token,
+      }),
+    });
+
+    if (!refreshResponse.ok) {
+      throw new Error('Failed to refresh Bling token');
+    }
+
+    const newTokenData = await refreshResponse.json();
+    const newExpiresAt = new Date(Date.now() + (newTokenData.expires_in * 1000));
+
+    await supabase.from('bling_oauth_tokens').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+    await supabase.from('bling_oauth_tokens').insert({
+      access_token: newTokenData.access_token,
+      refresh_token: newTokenData.refresh_token,
+      expires_at: newExpiresAt.toISOString(),
+    });
+
+    return newTokenData.access_token;
+  }
+
+  return tokenData.access_token;
+}
+
+async function blingRequest(accessToken: string, endpoint: string, options: RequestInit = {}): Promise<any> {
+  const response = await fetch(`${BLING_API_BASE}${endpoint}`, {
+    ...options,
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Content-Type': 'application/json',
+      'Accept': 'application/json',
+      ...options.headers,
+    },
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`Bling API error: ${response.status} - ${errorText}`);
+  }
+
+  return response.json();
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -20,29 +95,46 @@ serve(async (req) => {
 
     console.log('Starting Bling product sync...');
 
-    // Fetch all products from Bling
-    const blingProducts = await fetchBlingProducts();
+    const accessToken = await getBlingAccessToken(supabase);
+    
+    const allProducts: any[] = [];
+    let page = 1;
+    let hasMore = true;
+
+    while (hasMore && page <= 10) {
+      try {
+        const result = await blingRequest(accessToken, `/produtos?pagina=${page}&limite=100`);
+        
+        if (result.data && result.data.length > 0) {
+          allProducts.push(...result.data);
+          page++;
+          hasMore = result.data.length === 100;
+        } else {
+          hasMore = false;
+        }
+      } catch (error) {
+        console.error('Error fetching products page', page, error);
+        hasMore = false;
+      }
+    }
+
+    console.log(`Fetched ${allProducts.length} products from Bling`);
     
     let synced = 0;
     let failed = 0;
 
-    for (const product of blingProducts) {
+    for (const product of allProducts) {
       try {
-        // Get product details with stock
         const productId = product.id.toString();
         
-        // Cache the product data
         await supabase
           .from('bling_products_cache')
           .upsert({
             bling_product_id: productId,
             data: product,
             synced_at: new Date().toISOString(),
-          }, {
-            onConflict: 'bling_product_id',
-          });
+          }, { onConflict: 'bling_product_id' });
 
-        // Create slug from name
         const slug = product.nome
           .toLowerCase()
           .normalize('NFD')
@@ -50,7 +142,6 @@ serve(async (req) => {
           .replace(/[^a-z0-9]+/g, '-')
           .replace(/^-|-$/g, '');
 
-        // Update or create product in main products table
         const productData = {
           sku: product.codigo || productId,
           name: product.nome,
@@ -63,7 +154,6 @@ serve(async (req) => {
           brand: product.marca || null,
         };
 
-        // Check if product exists by SKU
         const { data: existingProduct } = await supabase
           .from('products')
           .select('id')
@@ -71,7 +161,6 @@ serve(async (req) => {
           .maybeSingle();
 
         if (existingProduct) {
-          // Update existing product
           await supabase
             .from('products')
             .update({
@@ -85,7 +174,6 @@ serve(async (req) => {
             })
             .eq('id', existingProduct.id);
         } else {
-          // Insert new product
           const { data: newProduct, error: insertError } = await supabase
             .from('products')
             .insert(productData)
@@ -98,8 +186,7 @@ serve(async (req) => {
             continue;
           }
 
-          // If product has images, add them
-          if (product.imagemURL) {
+          if (product.imagemURL && newProduct) {
             await supabase
               .from('product_images')
               .insert({
@@ -121,12 +208,7 @@ serve(async (req) => {
     console.log(`Sync complete. Synced: ${synced}, Failed: ${failed}`);
 
     return new Response(
-      JSON.stringify({
-        success: true,
-        synced,
-        failed,
-        total: blingProducts.length,
-      }),
+      JSON.stringify({ success: true, synced, failed, total: allProducts.length }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
     );
   } catch (error) {

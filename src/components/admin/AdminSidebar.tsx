@@ -27,6 +27,7 @@ import {
   ChevronLeft,
   ChevronRight,
   ShoppingCart,
+  Link as LinkIcon,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
@@ -69,6 +70,11 @@ const adminOnlyItems = [
     title: 'Usuários',
     url: '/admin/users',
     icon: Users,
+  },
+  {
+    title: 'Bling',
+    url: '/admin/bling',
+    icon: LinkIcon,
   },
   {
     title: 'Configurações',

@@ -23,6 +23,7 @@ import {
   AdminBannersPage,
   AdminUsersPage,
   AdminSettingsPage,
+  AdminBlingPage,
 } from "./pages/admin";
 import AdminOrdersPage from "./pages/admin/AdminOrdersPage";
 
@@ -54,6 +55,7 @@ const App = () => (
                 <Route path="orders" element={<AdminOrdersPage />} />
                 <Route path="banners" element={<AdminBannersPage />} />
                 <Route path="users" element={<AdminUsersPage />} />
+                <Route path="bling" element={<AdminBlingPage />} />
                 <Route path="settings" element={<AdminSettingsPage />} />
               </Route>
               
