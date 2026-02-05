@@ -18,7 +18,6 @@ serve(async (req) => {
     
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Check if we have valid tokens
     const { data: tokenData, error } = await supabase
       .from('bling_oauth_tokens')
       .select('expires_at')
@@ -28,7 +27,6 @@ serve(async (req) => {
 
     const isConnected = !error && tokenData && new Date(tokenData.expires_at) > new Date();
 
-    // Generate authorization URL for connecting
     const redirectUri = `${SUPABASE_URL}/functions/v1/bling-oauth-callback`;
     const authUrl = `https://www.bling.com.br/Api/v3/oauth/authorize?response_type=code&client_id=${BLING_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&state=connect`;
 

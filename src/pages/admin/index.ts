@@ -6,3 +6,4 @@ export { default as AdminStockPage } from './AdminStockPage';
 export { default as AdminBannersPage } from './AdminBannersPage';
 export { default as AdminUsersPage } from './AdminUsersPage';
 export { default as AdminSettingsPage } from './AdminSettingsPage';
+export { default as AdminBlingPage } from './AdminBlingPage';
