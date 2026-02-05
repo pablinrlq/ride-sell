@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, X, User, Search } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
 import { useState } from 'react';
@@ -64,11 +64,6 @@ const Header = () => {
               <Search className="h-5 w-5" />
             </Button>
             
-            <Link to="/admin">
-              <Button variant="ghost" size="icon" className="hidden md:flex">
-                <User className="h-5 w-5" />
-              </Button>
-            </Link>
             <Link to="/carrinho" className="relative">
               <Button variant="ghost" size="icon">
                 <ShoppingCart className="h-5 w-5" />
@@ -112,13 +107,6 @@ const Header = () => {
                 {link.name}
               </Link>
             ))}
-            <Link
-              to="/admin"
-              onClick={() => setMobileMenuOpen(false)}
-              className="block py-3 text-sm font-medium text-muted-foreground hover:text-primary"
-            >
-              Área Admin
-            </Link>
           </nav>
         )}
       </div>

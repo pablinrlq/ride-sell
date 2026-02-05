@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { MapPin, Phone, Mail, Instagram, Facebook } from 'lucide-react';
+import { MapPin, Phone, Instagram } from 'lucide-react';
 import logo from '@/assets/logo.png';
 
 const Footer = () => {
@@ -42,34 +42,39 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Contact */}
+          {/* Contact & WhatsApp */}
           <div>
             <h4 className="font-semibold mb-4">Contato</h4>
             <ul className="space-y-3">
               <li className="flex items-center gap-2 text-sm text-muted-foreground">
                 <MapPin className="h-4 w-4" />
-                <span>Rua das Bikes, 123 - Centro</span>
+                <span>Belo Horizonte - MG</span>
               </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Phone className="h-4 w-4" />
-                <span>(11) 99999-9999</span>
-              </li>
-              <li className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Mail className="h-4 w-4" />
-                <span>contato@danielbikeshop.com</span>
+              <li>
+                <a 
+                  href="https://wa.me/5531995326386" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
+                >
+                  <Phone className="h-4 w-4" />
+                  <span>(31) 99532-6386</span>
+                </a>
               </li>
             </ul>
           </div>
 
-          {/* Social */}
+          {/* Social - Only Instagram */}
           <div>
             <h4 className="font-semibold mb-4">Redes Sociais</h4>
             <div className="flex gap-4">
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
+              <a 
+                href="https://www.instagram.com/daniel_bike_shop/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-muted-foreground hover:text-primary transition-colors"
+              >
                 <Instagram className="h-6 w-6" />
-              </a>
-              <a href="#" className="text-muted-foreground hover:text-primary transition-colors">
-                <Facebook className="h-6 w-6" />
               </a>
             </div>
           </div>
