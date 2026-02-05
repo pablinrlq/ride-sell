@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -40,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
@@ -52,9 +51,16 @@ import {
   Loader2,
   Package,
   Filter,
-  X,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ProductImageUpload from '@/components/admin/ProductImageUpload';
+
+interface ProductImage {
+  id?: string;
+  image_url: string;
+  is_primary: boolean;
+  display_order: number;
+}
 
 interface Product {
   id: string;
@@ -120,6 +126,7 @@ const AdminProductsPage: React.FC = () => {
     suspensao: '',
     tamanho_quadro: '',
   });
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
 
   // Fetch products
   const { data: products, isLoading } = useQuery({
@@ -165,7 +172,7 @@ const AdminProductsPage: React.FC = () => {
 
   // Create/Update mutation
   const saveMutation = useMutation({
-    mutationFn: async (data: typeof formData & { id?: string }) => {
+    mutationFn: async (data: typeof formData & { id?: string; images: ProductImage[] }) => {
       const slug = generateSlug(data.name);
       const productData = {
         name: data.name,
@@ -187,6 +194,8 @@ const AdminProductsPage: React.FC = () => {
         tamanho_quadro: data.tamanho_quadro || null,
       };
 
+      let productId = data.id;
+
       if (data.id) {
         const { error } = await supabase
           .from('products')
@@ -194,13 +203,41 @@ const AdminProductsPage: React.FC = () => {
           .eq('id', data.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from('products').insert(productData);
+        const { data: newProduct, error } = await supabase
+          .from('products')
+          .insert(productData)
+          .select('id')
+          .single();
         if (error) throw error;
+        productId = newProduct.id;
+      }
+
+      // Handle images
+      if (productId && data.images.length > 0) {
+        // Delete existing images if updating
+        if (data.id) {
+          await supabase.from('product_images').delete().eq('product_id', productId);
+        }
+
+        // Insert new images
+        const imagesToInsert = data.images.map((img, index) => ({
+          product_id: productId,
+          image_url: img.image_url,
+          is_primary: img.is_primary,
+          display_order: index,
+        }));
+
+        const { error: imgError } = await supabase
+          .from('product_images')
+          .insert(imagesToInsert);
+        
+        if (imgError) throw imgError;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin-products'] });
       queryClient.invalidateQueries({ queryKey: ['admin-products-count'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       setIsDialogOpen(false);
       resetForm();
       toast({
@@ -288,10 +325,28 @@ const AdminProductsPage: React.FC = () => {
       suspensao: '',
       tamanho_quadro: '',
     });
+    setProductImages([]);
     setSelectedProduct(null);
   };
 
-  const handleEdit = (product: Product) => {
+  const loadProductImages = async (productId: string) => {
+    const { data } = await supabase
+      .from('product_images')
+      .select('*')
+      .eq('product_id', productId)
+      .order('display_order');
+    
+    if (data) {
+      setProductImages(data.map(img => ({
+        id: img.id,
+        image_url: img.image_url,
+        is_primary: img.is_primary,
+        display_order: img.display_order,
+      })));
+    }
+  };
+
+  const handleEdit = async (product: Product) => {
     setSelectedProduct(product);
     setFormData({
       name: product.name,
@@ -311,6 +366,7 @@ const AdminProductsPage: React.FC = () => {
       suspensao: product.suspensao || '',
       tamanho_quadro: product.tamanho_quadro || '',
     });
+    await loadProductImages(product.id);
     setIsDialogOpen(true);
   };
 
@@ -324,6 +380,7 @@ const AdminProductsPage: React.FC = () => {
     saveMutation.mutate({
       ...formData,
       id: selectedProduct?.id,
+      images: productImages,
     });
   };
 
@@ -570,6 +627,16 @@ const AdminProductsPage: React.FC = () => {
                   onChange={(e) => setFormData({ ...formData, model: e.target.value })}
                 />
               </div>
+            </div>
+
+            {/* Image Upload */}
+            <div className="border-t pt-4">
+              <ProductImageUpload
+                productId={selectedProduct?.id}
+                images={productImages}
+                onImagesChange={setProductImages}
+                disabled={saveMutation.isPending}
+              />
             </div>
 
             <div className="space-y-2">
