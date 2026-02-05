@@ -1,13 +1,15 @@
 import { Link, useLocation } from 'react-router-dom';
-import { ShoppingCart, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, Menu, X, Search, Heart } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
+import { useWishlist } from '@/contexts/WishlistContext';
 import { useState } from 'react';
 import logo from '@/assets/logo.png';
 import SearchBar from '@/components/SearchBar';
 
 const Header = () => {
   const { itemCount } = useCart();
+  const { wishlistCount } = useWishlist();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const location = useLocation();
@@ -64,6 +66,18 @@ const Header = () => {
             >
               <Search className="h-5 w-5" />
             </Button>
+
+            {/* Wishlist */}
+            <Link to="/favoritos" className="relative">
+              <Button variant="ghost" size="icon">
+                <Heart className="h-5 w-5" />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </Button>
+            </Link>
             
             <Link to="/carrinho" className="relative">
               <Button variant="ghost" size="icon">

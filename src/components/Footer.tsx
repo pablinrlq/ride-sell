@@ -1,11 +1,17 @@
 import { Link } from 'react-router-dom';
 import { MapPin, Phone, Instagram } from 'lucide-react';
 import logo from '@/assets/logo.png';
+import Newsletter from '@/components/Newsletter';
 
 const Footer = () => {
   return (
     <footer className="bg-card border-t border-border">
       <div className="container mx-auto px-4 py-12">
+        {/* Newsletter Section */}
+        <div className="mb-12">
+          <Newsletter />
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* Logo & About */}
           <div className="md:col-span-1">
@@ -37,6 +43,11 @@ const Footer = () => {
               <li>
                 <Link to="/produtos?categoria=acessorios" className="text-sm text-muted-foreground hover:text-primary transition-colors">
                   Acessórios
+                </Link>
+              </li>
+              <li>
+                <Link to="/favoritos" className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                  Lista de Desejos
                 </Link>
               </li>
             </ul>

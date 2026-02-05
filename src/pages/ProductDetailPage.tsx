@@ -11,6 +11,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import WishlistButton from '@/components/WishlistButton';
+import ProductReviews from '@/components/ProductReviews';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
@@ -226,16 +228,21 @@ const ProductDetailPage = () => {
                 )}
               </div>
 
-              <div className="mt-8">
+              <div className="mt-8 flex flex-wrap gap-3">
                 <Button 
                   size="lg" 
                   onClick={handleAddToCart}
                   disabled={!canPurchase}
-                  className="w-full sm:w-auto gap-2"
+                  className="gap-2"
                 >
                   <ShoppingCart className="h-5 w-5" />
                   {isOutOfStock ? 'Produto Esgotado' : !isStoreOpen ? 'Loja Fechada' : 'Adicionar ao Carrinho'}
                 </Button>
+                <WishlistButton 
+                  productId={product.id} 
+                  productName={product.name}
+                  variant="full"
+                />
               </div>
 
               {/* Features */}
@@ -255,6 +262,9 @@ const ProductDetailPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Product Reviews */}
+          <ProductReviews productId={product.id} productName={product.name} />
 
           {/* Related Products */}
           {relatedProducts.length > 0 && (
