@@ -480,6 +480,7 @@ export type Database = {
           facebook_url: string | null
           id: string
           instagram_url: string | null
+          is_store_open: boolean
           logo_url: string | null
           state: string | null
           store_name: string
@@ -498,6 +499,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string
           instagram_url?: string | null
+          is_store_open?: boolean
           logo_url?: string | null
           state?: string | null
           store_name?: string
@@ -516,6 +518,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string
           instagram_url?: string | null
+          is_store_open?: boolean
           logo_url?: string | null
           state?: string | null
           store_name?: string

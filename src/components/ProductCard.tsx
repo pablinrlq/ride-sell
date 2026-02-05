@@ -5,6 +5,7 @@ import { useCart } from '@/contexts/CartContext';
 import { ShoppingCart, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 
 interface ProductCardProps {
   product: Product;
@@ -12,8 +13,22 @@ interface ProductCardProps {
 
 const ProductCard = ({ product }: ProductCardProps) => {
   const { addToCart } = useCart();
+  const { data: storeSettings } = useStoreSettings();
+
+  const isOutOfStock = product.stock <= 0;
+  const isStoreOpen = storeSettings?.is_store_open ?? true;
+  const canPurchase = isStoreOpen && !isOutOfStock;
 
   const handleAddToCart = () => {
+    if (!canPurchase) {
+      if (!isStoreOpen) {
+        toast.error('A loja está fechada no momento.');
+      } else {
+        toast.error('Produto esgotado');
+      }
+      return;
+    }
+
     const cartProduct: CartProduct = {
       id: product.id,
       name: product.name,
@@ -59,9 +74,14 @@ const ProductCard = ({ product }: ProductCardProps) => {
             Últimas unidades
           </span>
         )}
-        {product.stock === 0 && (
+        {isOutOfStock && (
           <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-            <span className="text-muted-foreground font-semibold">Esgotado</span>
+            <span className="text-destructive font-semibold text-lg">Esgotado</span>
+          </div>
+        )}
+        {!isStoreOpen && !isOutOfStock && (
+          <div className="absolute inset-0 bg-background/60 flex items-center justify-center">
+            <span className="text-muted-foreground font-semibold">Loja Fechada</span>
           </div>
         )}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-background/90 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
@@ -75,11 +95,11 @@ const ProductCard = ({ product }: ProductCardProps) => {
             <Button 
               size="sm" 
               onClick={handleAddToCart}
-              disabled={product.stock === 0}
+              disabled={!canPurchase}
               className="flex-1 gap-1"
             >
               <ShoppingCart className="h-4 w-4" />
-              Comprar
+              {isOutOfStock ? 'Esgotado' : 'Comprar'}
             </Button>
           </div>
         </div>
@@ -98,6 +118,9 @@ const ProductCard = ({ product }: ProductCardProps) => {
             </span>
           )}
         </div>
+        {isOutOfStock && (
+          <p className="text-xs text-destructive mt-2 font-medium">Produto esgotado</p>
+        )}
       </div>
     </div>
   );

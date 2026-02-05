@@ -4,18 +4,25 @@ import Footer from '@/components/Footer';
 import { useProduct, useProducts } from '@/hooks/useProducts';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/contexts/CartContext';
-import { ShoppingCart, ArrowLeft, Truck, Shield, RotateCcw, Loader2 } from 'lucide-react';
+import { ShoppingCart, ArrowLeft, Truck, Shield, RotateCcw, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import ProductCard from '@/components/ProductCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useState } from 'react';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const ProductDetailPage = () => {
   const { id } = useParams();
   const { data: product, isLoading, error } = useProduct(id || '');
   const { data: allProducts } = useProducts();
   const { addToCart } = useCart();
+  const { data: storeSettings } = useStoreSettings();
   const [selectedImage, setSelectedImage] = useState(0);
+
+  const isOutOfStock = product ? product.stock <= 0 : false;
+  const isStoreOpen = storeSettings?.is_store_open ?? true;
+  const canPurchase = isStoreOpen && !isOutOfStock;
 
   if (isLoading) {
     return (
@@ -59,6 +66,15 @@ const ProductDetailPage = () => {
   }
 
   const handleAddToCart = () => {
+    if (!canPurchase) {
+      if (!isStoreOpen) {
+        toast.error('A loja está fechada no momento.');
+      } else {
+        toast.error('Produto esgotado');
+      }
+      return;
+    }
+
     addToCart({
       id: product.id,
       name: product.name,
@@ -100,6 +116,15 @@ const ProductDetailPage = () => {
             Voltar para produtos
           </Link>
 
+          {!isStoreOpen && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                A loja está fechada no momento. Não é possível realizar compras.
+              </AlertDescription>
+            </Alert>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
             {/* Images */}
             <div className="space-y-4">
@@ -113,6 +138,11 @@ const ProductDetailPage = () => {
                   <span className="absolute top-4 left-4 bg-destructive text-destructive-foreground text-sm font-bold px-3 py-1">
                     -{discount}%
                   </span>
+                )}
+                {isOutOfStock && (
+                  <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+                    <span className="text-destructive text-2xl font-bold">ESGOTADO</span>
+                  </div>
                 )}
               </div>
               {images.length > 1 && (
@@ -183,24 +213,28 @@ const ProductDetailPage = () => {
               )}
 
               <div className="mt-6">
-                <span className={`text-sm ${product.stock > 5 ? 'text-green-600' : product.stock > 0 ? 'text-yellow-600' : 'text-destructive'}`}>
-                  {product.stock > 5 
-                    ? `${product.stock} em estoque` 
-                    : product.stock > 0 
-                    ? `Apenas ${product.stock} em estoque` 
-                    : 'Esgotado'}
-                </span>
+                {isOutOfStock ? (
+                  <span className="text-destructive font-semibold text-lg">
+                    Produto esgotado
+                  </span>
+                ) : (
+                  <span className={`text-sm ${product.stock > 5 ? 'text-green-600' : 'text-yellow-600'}`}>
+                    {product.stock > 5 
+                      ? `${product.stock} em estoque` 
+                      : `Apenas ${product.stock} em estoque`}
+                  </span>
+                )}
               </div>
 
               <div className="mt-8">
                 <Button 
                   size="lg" 
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={!canPurchase}
                   className="w-full sm:w-auto gap-2"
                 >
                   <ShoppingCart className="h-5 w-5" />
-                  Adicionar ao Carrinho
+                  {isOutOfStock ? 'Produto Esgotado' : !isStoreOpen ? 'Loja Fechada' : 'Adicionar ao Carrinho'}
                 </Button>
               </div>
 

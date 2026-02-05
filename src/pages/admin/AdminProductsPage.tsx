@@ -242,6 +242,33 @@ const AdminProductsPage: React.FC = () => {
     },
   });
 
+  // Toggle product active status mutation
+  const toggleActiveMutation = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      const { error } = await supabase
+        .from('products')
+        .update({ is_active: isActive })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['admin-products'] });
+      toast({
+        title: variables.isActive ? 'Produto ativado!' : 'Produto desativado!',
+        description: variables.isActive 
+          ? 'O produto agora está visível para clientes.' 
+          : 'O produto foi ocultado dos clientes.',
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Erro',
+        description: error.message || 'Erro ao alterar status.',
+        variant: 'destructive',
+      });
+    },
+  });
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -433,12 +460,22 @@ const AdminProductsPage: React.FC = () => {
                         </span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          <Badge variant={product.is_active ? 'default' : 'secondary'}>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Switch
+                            checked={product.is_active}
+                            onCheckedChange={(checked) => 
+                              toggleActiveMutation.mutate({ id: product.id, isActive: checked })
+                            }
+                            disabled={toggleActiveMutation.isPending}
+                          />
+                          <span className={cn(
+                            'text-xs',
+                            product.is_active ? 'text-green-600' : 'text-muted-foreground'
+                          )}>
                             {product.is_active ? 'Ativo' : 'Inativo'}
-                          </Badge>
+                          </span>
                           {product.is_featured && (
-                            <Badge variant="outline">Destaque</Badge>
+                            <Badge variant="outline" className="text-xs">Destaque</Badge>
                           )}
                         </div>
                       </TableCell>

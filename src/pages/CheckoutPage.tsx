@@ -1,17 +1,21 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
 import { useCreateOrder } from '@/hooks/useOrders';
+import { useValidateStock } from '@/hooks/useStockValidation';
+import { useStoreSettings } from '@/hooks/useStoreSettings';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { ArrowLeft, CheckCircle, Loader2, MessageCircle, FileText } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ArrowLeft, CheckCircle, Loader2, MessageCircle, FileText, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 
 const WHATSAPP_NUMBER = '5531995326386';
 
@@ -27,8 +31,12 @@ const CheckoutPage = () => {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
   const createOrder = useCreateOrder();
+  const validateStock = useValidateStock();
+  const { data: storeSettings, isLoading: isLoadingSettings } = useStoreSettings();
   const [orderComplete, setOrderComplete] = useState(false);
   const [orderResult, setOrderResult] = useState<OrderResult | null>(null);
+  const [stockError, setStockError] = useState<string | null>(null);
+  const [isValidatingStock, setIsValidatingStock] = useState(false);
 
   const [formData, setFormData] = useState({
     customer_name: '',
@@ -43,6 +51,41 @@ const CheckoutPage = () => {
 
   const shippingCost = total >= 299 ? 0 : 29.90;
   const orderTotal = total + shippingCost;
+
+  const isStoreOpen = storeSettings?.is_store_open ?? true;
+
+  // Validate stock on page load
+  useEffect(() => {
+    const validateOnLoad = async () => {
+      if (items.length === 0) return;
+      
+      setIsValidatingStock(true);
+      try {
+        const result = await validateStock.mutateAsync(
+          items.map(item => ({
+            productId: item.product.id,
+            quantity: item.quantity,
+          }))
+        );
+
+        if (!result.valid) {
+          if (result.error === 'store_closed') {
+            setStockError(result.message || 'A loja está fechada no momento.');
+          } else if (result.results) {
+            const invalidItems = result.results.filter(r => !r.valid);
+            const messages = invalidItems.map(r => r.message).join('; ');
+            setStockError(messages);
+          }
+        }
+      } catch (error) {
+        console.error('Stock validation error:', error);
+      } finally {
+        setIsValidatingStock(false);
+      }
+    };
+
+    validateOnLoad();
+  }, [items]);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -101,6 +144,38 @@ const CheckoutPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setStockError(null);
+
+    // Final stock validation before order creation
+    setIsValidatingStock(true);
+    try {
+      const stockResult = await validateStock.mutateAsync(
+        items.map(item => ({
+          productId: item.product.id,
+          quantity: item.quantity,
+        }))
+      );
+
+      if (!stockResult.valid) {
+        if (stockResult.error === 'store_closed') {
+          setStockError(stockResult.message || 'A loja está fechada no momento.');
+          toast.error('A loja está fechada no momento.');
+        } else if (stockResult.results) {
+          const invalidItems = stockResult.results.filter(r => !r.valid);
+          const messages = invalidItems.map(r => r.message).join('; ');
+          setStockError(messages);
+          toast.error('Alguns produtos estão indisponíveis');
+        }
+        setIsValidatingStock(false);
+        return;
+      }
+    } catch (error: any) {
+      console.error('Stock validation error:', error);
+      setStockError('Erro ao validar estoque. Tente novamente.');
+      setIsValidatingStock(false);
+      return;
+    }
+    setIsValidatingStock(false);
 
     const orderItems = items.map(item => ({
       product_id: item.product.id,
@@ -122,8 +197,9 @@ const CheckoutPage = () => {
       setOrderResult(order as OrderResult);
       setOrderComplete(true);
       clearCart();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao criar pedido:', error);
+      toast.error(error.message || 'Erro ao criar pedido');
     }
   };
 
@@ -136,6 +212,39 @@ const CheckoutPage = () => {
   if (items.length === 0 && !orderComplete) {
     navigate('/carrinho');
     return null;
+  }
+
+  if (isLoadingSettings) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!isStoreOpen && !orderComplete) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center py-16">
+          <div className="text-center max-w-md px-4">
+            <AlertTriangle className="h-20 w-20 mx-auto text-destructive mb-6" />
+            <h1 className="text-3xl font-bold mb-4">Loja Fechada</h1>
+            <p className="text-muted-foreground mb-8">
+              A loja está fechada no momento. Não é possível finalizar compras agora.
+            </p>
+            <Link to="/produtos">
+              <Button size="lg">Ver Produtos</Button>
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
   }
 
   if (orderComplete && orderResult) {
@@ -198,6 +307,13 @@ const CheckoutPage = () => {
           </Link>
 
           <h1 className="text-3xl font-bold mb-8">Finalizar Compra</h1>
+
+          {stockError && (
+            <Alert variant="destructive" className="mb-6">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>{stockError}</AlertDescription>
+            </Alert>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -363,9 +479,14 @@ const CheckoutPage = () => {
                       type="submit"
                       className="w-full"
                       size="lg"
-                      disabled={createOrder.isPending}
+                      disabled={createOrder.isPending || isValidatingStock || !!stockError}
                     >
-                      {createOrder.isPending ? (
+                      {isValidatingStock ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Validando estoque...
+                        </>
+                      ) : createOrder.isPending ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Processando...

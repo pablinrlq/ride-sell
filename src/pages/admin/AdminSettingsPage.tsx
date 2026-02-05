@@ -4,12 +4,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Settings, Store, Phone, MapPin, Globe, Upload } from 'lucide-react';
+import { Loader2, Store, Phone, MapPin, Globe, Upload, ShoppingBag } from 'lucide-react';
 
 interface StoreSettings {
   id: string;
@@ -26,6 +25,7 @@ interface StoreSettings {
   instagram_url: string | null;
   facebook_url: string | null;
   currency: string;
+  is_store_open: boolean;
 }
 
 const AdminSettingsPage: React.FC = () => {
@@ -46,6 +46,7 @@ const AdminSettingsPage: React.FC = () => {
     instagram_url: '',
     facebook_url: '',
     currency: 'BRL',
+    is_store_open: true,
   });
 
   const { data: settings, isLoading } = useQuery({
@@ -77,6 +78,7 @@ const AdminSettingsPage: React.FC = () => {
         instagram_url: settings.instagram_url || '',
         facebook_url: settings.facebook_url || '',
         currency: settings.currency || 'BRL',
+        is_store_open: settings.is_store_open ?? true,
       });
     }
   }, [settings]);
@@ -167,6 +169,38 @@ const AdminSettingsPage: React.FC = () => {
         <h1 className="text-3xl font-bold">Configurações</h1>
         <p className="text-muted-foreground">Configure as informações da loja</p>
       </div>
+
+      {/* Store Status */}
+      <Card className="border-2 border-primary/20">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShoppingBag className="h-5 w-5" />
+            Status da Loja
+          </CardTitle>
+          <CardDescription>Controle se a loja está aberta para vendas</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Loja Aberta para Clientes</p>
+              <p className="text-sm text-muted-foreground">
+                Quando fechada, clientes não podem fazer compras
+              </p>
+            </div>
+            <Switch
+              checked={formData.is_store_open}
+              onCheckedChange={(checked) => setFormData({ ...formData, is_store_open: checked })}
+            />
+          </div>
+          {!formData.is_store_open && (
+            <div className="mt-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg">
+              <p className="text-sm text-destructive font-medium">
+                ⚠️ A loja está fechada. Clientes não podem finalizar compras.
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Store Info */}
