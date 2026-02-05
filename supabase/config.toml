@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.bling-create-order]
 verify_jwt = false
+
+[functions.bling-validate-stock]
+verify_jwt = false
