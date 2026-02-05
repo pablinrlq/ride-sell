@@ -1,12 +1,15 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import { useCart } from '@/contexts/CartContext';
 import { Button } from '@/components/ui/button';
 import { Trash2, Plus, Minus, ShoppingBag, ArrowRight } from 'lucide-react';
+import CouponInput, { AppliedCoupon } from '@/components/CouponInput';
 
 const CartPage = () => {
   const { items, removeFromCart, updateQuantity, total, clearCart } = useCart();
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -16,7 +19,15 @@ const CartPage = () => {
   };
 
   const shippingCost = total >= 299 ? 0 : 29.90;
-  const orderTotal = total + shippingCost;
+  
+  // Calculate discount
+  const discountAmount = appliedCoupon
+    ? appliedCoupon.discountType === 'percentage'
+      ? (total * appliedCoupon.discountValue) / 100
+      : Math.min(appliedCoupon.discountValue, total)
+    : 0;
+
+  const orderTotal = total - discountAmount + shippingCost;
 
   if (items.length === 0) {
     return (
@@ -105,16 +116,30 @@ const CartPage = () => {
 
             {/* Summary */}
             <div className="lg:col-span-1">
-              <div className="bg-card border border-border p-6 sticky top-24">
-                <h2 className="text-xl font-bold mb-6">Resumo do Pedido</h2>
-                <div className="space-y-3 text-sm">
+              <div className="bg-card border border-border p-6 sticky top-24 space-y-4">
+                <h2 className="text-xl font-bold">Resumo do Pedido</h2>
+                
+                {/* Coupon Input */}
+                <CouponInput
+                  orderTotal={total}
+                  appliedCoupon={appliedCoupon}
+                  onApplyCoupon={setAppliedCoupon}
+                />
+
+                <div className="space-y-3 text-sm pt-4 border-t border-border">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Subtotal</span>
                     <span>{formatPrice(total)}</span>
                   </div>
+                  {discountAmount > 0 && (
+                    <div className="flex justify-between text-primary">
+                      <span>Desconto ({appliedCoupon?.code})</span>
+                      <span>-{formatPrice(discountAmount)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Frete</span>
-                    <span className={shippingCost === 0 ? 'text-green-600' : ''}>
+                    <span className={shippingCost === 0 ? 'text-primary' : ''}>
                       {shippingCost === 0 ? 'Grátis' : formatPrice(shippingCost)}
                     </span>
                   </div>
@@ -124,17 +149,17 @@ const CartPage = () => {
                       <span>{formatPrice(orderTotal)}</span>
                     </div>
                     {total >= 299 && (
-                      <p className="text-xs text-green-600 mt-1">Você ganhou frete grátis!</p>
+                      <p className="text-xs text-primary mt-1">Você ganhou frete grátis!</p>
                     )}
                   </div>
                 </div>
-                <Link to="/checkout" className="block mt-6">
+                <Link to="/checkout" className="block">
                   <Button className="w-full gap-2" size="lg">
                     Finalizar Pedido
                     <ArrowRight className="h-4 w-4" />
                   </Button>
                 </Link>
-                <Link to="/produtos" className="block text-center mt-4">
+                <Link to="/produtos" className="block text-center">
                   <Button variant="link" className="text-muted-foreground">
                     Continuar Comprando
                   </Button>

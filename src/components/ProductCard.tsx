@@ -6,6 +6,7 @@ import { ShoppingCart, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useStoreSettings } from '@/hooks/useStoreSettings';
+import WishlistButton from '@/components/WishlistButton';
 
 interface ProductCardProps {
   product: Product;
@@ -64,13 +65,21 @@ const ProductCard = ({ product }: ProductCardProps) => {
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
+        {/* Wishlist button */}
+        <div className="absolute top-2 right-2 z-10">
+          <WishlistButton 
+            productId={product.id} 
+            productName={product.name}
+            className="bg-background/80 hover:bg-background"
+          />
+        </div>
         {discount > 0 && (
           <span className="absolute top-3 left-3 bg-destructive text-destructive-foreground text-xs font-bold px-2 py-1">
             -{discount}%
           </span>
         )}
         {product.stock <= 3 && product.stock > 0 && (
-          <span className="absolute top-3 right-3 bg-secondary text-secondary-foreground text-xs font-bold px-2 py-1">
+          <span className="absolute top-12 left-3 bg-secondary text-secondary-foreground text-xs font-bold px-2 py-1">
             Últimas unidades
           </span>
         )}

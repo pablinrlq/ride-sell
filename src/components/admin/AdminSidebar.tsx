@@ -28,6 +28,8 @@ import {
   ChevronRight,
   ShoppingCart,
   Link as LinkIcon,
+  Tag,
+  Star,
 } from 'lucide-react';
 import logo from '@/assets/logo.png';
 import { cn } from '@/lib/utils';
@@ -62,6 +64,16 @@ const menuItems = [
     title: 'Banners',
     url: '/admin/banners',
     icon: Image,
+  },
+  {
+    title: 'Cupons',
+    url: '/admin/coupons',
+    icon: Tag,
+  },
+  {
+    title: 'Avaliações',
+    url: '/admin/reviews',
+    icon: Star,
   },
 ];
 
